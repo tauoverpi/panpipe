@@ -14,28 +14,28 @@ import Text.Pandoc.JSON   (toJSONFilter)
 import Text.Pandoc.Shared (inDirectory)
 import Text.Pandoc.Walk   (walkM)
 
-pipeBWith :: (Functor m, Monad m) => (FilePath -> Text -> m Text)
+pipeBWith :: (Functor m, Monad m) => (FilePath -> String -> m String)
                                   -> Block
                                   -> m Block
 pipeBWith f (CodeBlock as s)
-          |  Just (as', p) <- partPipes as = CodeBlock as' <$> f (unpack p) s
+          |  Just (as', p) <- partPipes as = CodeBlock as' <$> f p s
 pipeBWith f x = walkM (pipeIWith f) x
 
 pipeB = pipeBWith readShell
 
-pipeIWith :: (Functor m, Monad m) => (FilePath -> Text -> m Text)
+pipeIWith :: (Functor m, Monad m) => (FilePath -> String -> m String)
                                   -> Inline
                                   -> m Inline
 pipeIWith f (Code as s)
-          |  Just (as', p) <- partPipes as = Code as' <$> f (unpack p) s
+          |  Just (as', p) <- partPipes as = Code as' <$> f p s
 pipeIWith f x = return x
 
 pipeI = pipeIWith readShell
 
-readShell :: FilePath -> Text -> IO Text
-readShell path stdin = pack <$> readProcess "sh" ["-c", path] (unpack stdin)
+readShell :: FilePath -> String -> IO String
+readShell path stdin = readProcess "sh" ["-c", path] stdin
 
-partPipes :: Attr -> Maybe (Attr, Text)
+partPipes :: Attr -> Maybe (Attr, String)
 partPipes (x, y, zs) = case partition (("pipe" ==) . fst) zs of
                             ((_, p):_, zs') -> Just ((x, y, zs'), p)
                             _               -> Nothing
